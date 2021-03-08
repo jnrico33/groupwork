@@ -2,9 +2,7 @@
 title: "newdistlearn"
 author: "Jessica Rico"
 date: "3/6/2021"
-output: 
-  html_document: 
-    keep_md: yes
+output: html_notebook
 runtime: shiny
 ---
 
@@ -82,7 +80,8 @@ gpa%>%
 
 
 ```{r}
-gpa %>% 
+gpa %>%
+  group_by(year) %>% 
   summarise_all(~(sum(is.na(.))))
 ```
 
@@ -94,9 +93,10 @@ gpa2<- gpa%>%
 ```
 
 
-
+##Is this neccessary if the ggplot will already omit NA's? Keeping our code shorter but more concise seems preferable.
 ```{r}
 gpa2 %>% 
+  group_by(year) %>% 
   summarise_all(~(sum(is.na(.))))
 
 ```
@@ -109,7 +109,17 @@ gpa2
 
 #This dataset shows the term 1 and term 2 grades for students by year. Term 1 represents progress grades and term 2 is the final semester grade. I removed the NA's that were present in the form of no values. These values coincided with students either withdrawing prior to receiving their posted grades or enrolling with less than 20 days between their enrollment and the grading period. 
 ```
+##This chunk manipulates the gpa2 dataframe into a form that we can use in our shiny app.
+```{r}
+gpa2_x <- gpa2 %>% rename('1'= term_1, '2' = term_2)
+gpa_2_long <- gpa2_x %>% 
+  pivot_longer(
+    3:4,
+    names_to="term",
+    values_to = "gpa")
+#write.csv(gpa_2_long, "gpa_2_long.csv")
 
+```
 
 #Attendance Codes by Year
 
@@ -127,10 +137,10 @@ attcodes
 
 #This dataset shows the usage of attendance codes by year. These attendance codes are used when we enter the reason behind an absence. Some, such as DR, ILL, are excused while others like UNV, and VUN are not excused. These factor in when it comes to determining our attendance percentages. The codes ILL19, AVP, NWFA, DAC, and NCA are codes introduced due to the pandemic. 
 ```
-#Attempt to merge all datasets
+#Attempt to merge all attendance datasets (Do you plan to use 'virtualed' in the apps?)
 
 ```{r}
-virtualed <- merge(attrates, attcodes,by="year")
+virtualed <- merge(attrates, codesmonth,by="year")
 virtualed
 ```
 
@@ -169,11 +179,11 @@ ui <- dashboardPage(
 server <- function(input, output, session) { 
     
     output$plot <- renderPlot({
-        attrates %>% 
-            filter(month==input$x & attendance_rate_percent==input$y) %>% 
-            ggplot(aes(x=month, fill=year)) +
+        virtualed %>% 
+            filter(month.x==input$x & attendance_rate_percent==input$y) %>% 
+            ggplot(aes(x=month.x, fill=year)) +
             geom_histogram()+
-            facet_wrap(~year)+
+            #facet_wrap(~year)+
             #geom_col(color="black", fill="slateblue2", alpha=1)+
             theme_gdocs()+
             theme(axis.text.x = element_text(angle = 60, hjust = 1))
@@ -225,7 +235,7 @@ shinyApp(ui, server)
 
 
 
-
+## These new data sets need to be higher up.
 ```{r}
 codesmonth<- readr::read_csv("ATTENDANCE CODES BY MONTH.csv")
 codesmonth<- janitor::clean_names(codesmonth)
@@ -312,7 +322,7 @@ dashboardBody(
 server <- function(input, output, session) { 
  output$plot <- renderPlot({
   attjoined %>% 
-  ggplot(aes_string(x = "month", y = input$y, fill=input$y)) +
+  ggplot(aes_string(x = "month", y = input$y, fill=code)) +
   geom_col(position="dodge", alpha = 0.8, size=4)+
   theme_light(base_size = 18) + 
      labs(title= "Attendance and Enrollment by month", x="Attendance Month", y="Number of Students", fill = "Legend")+
@@ -322,7 +332,3 @@ server <- function(input, output, session) {
   }
 shinyApp(ui, server)
 ```
-
-
-
-

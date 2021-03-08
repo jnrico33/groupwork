@@ -34,7 +34,7 @@ library(ggpubr)
 options(scipen=999)
 ```
 
-## Term GPA's by Grade
+## Term GPA's by Grade  ##(What does x4 mean?)
 
 ```{r}
 gpa19 <- readr::read_csv("1920 Term gpa.csv")
@@ -71,6 +71,7 @@ sevengpa_19 <- term_2_19%>%
   summarise(totaln=n())
 sevengpa_19
 ```
+##Is this summary neccessary to explain the data?
 ```{r}
 sixgpa_19 <- term_2_19%>%
   filter(grade=="6")%>%
