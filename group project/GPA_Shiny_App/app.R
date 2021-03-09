@@ -6,13 +6,15 @@
 #
 #    http://shiny.rstudio.com/
 #
-
+library(tidyverse)
 library(shiny)
+library(shinydashboard)
+library(ggthemes)
 gpa_2_long <- readr::read_csv("gpa_2_long.csv")
 
 ui <- dashboardPage(
     dashboardHeader(title = "GPA Shiny App"),
-    dashboardSidebar(disable = T),
+    dashboardSidebar(disable = F),
     dashboardBody(
         fluidRow(
             box(title = "Plot Options", width = 2,
@@ -36,7 +38,7 @@ server <- function(input, output, session) {
         gpa_2_long %>% 
             filter(grade==input$x & term==input$y & year==input$z) %>% 
             ggplot(aes(x=gpa, fill=year)) +
-            geom_histogram(color="black", fill="darkcyan", alpha=.5)+
+            geom_density(color="black", fill="darkcyan", alpha=.5)+
             theme_gdocs()+
             labs(x="GPA", y="Student Count")
         

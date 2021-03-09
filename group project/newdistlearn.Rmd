@@ -239,7 +239,26 @@ shinyApp(ui, server)
 ```{r}
 codesmonth<- readr::read_csv("ATTENDANCE CODES BY MONTH.csv")
 codesmonth<- janitor::clean_names(codesmonth)
-codesmonth
+codesmonth$month <- as.factor(codesmonth$month)
+codesmonth$year <- as.factor(codesmonth$year)
+```
+```{r}
+codesmonth_wide <- codesmonth %>% 
+  pivot_wider(
+    names_from = "code",
+    values_from = "used"
+  )
+codesmonth_wide
+```
+```{r}
+attjoined <- inner_join(attrates, codesmonth_wide, by=c("year","month"))
+```
+
+
+```{r}
+
+attrates$month <- as.factor(attrates$month)
+attrates
 ```
 
 
@@ -249,13 +268,35 @@ codesmonth
 
 
 ```{r}
-attjoined<- merge(attrates, codesmonth,by=c("month", "year"))
-attjoined$year <- as.numeric(attjoined$year)
+glimpse(attjoined)
+```
+```{r}
 attjoined
+```
+```{r}
+attjoined %>% 
+  pivot_longer(
+    7:17,
+    names_to="attendance_code",
+    values_to="occurences"
+  ) %>% 
+  filter(year==2019) %>% 
+  select(attendance_code, occurences) %>% 
+  group_by(attendance_code) %>% 
+  summarise(n=sum(occurences))
+```
+
+```{r}
+attjoined %>% 
+  ggplot(aes(x=code, y=month, fill=year))+
+  geom_col(position = "dodge")
 ```
 
 
 
+```{r}
+attjoined
+```
 
 ```{r, eval=FALSE, echo=TRUE}
 
@@ -303,6 +344,14 @@ shinyApp(ui, server)
 
 
 
+
+```{r}
+attjoined
+```
+```{r}
+n_distinct(attjoined$code)
+attjoined$code <- as.factor(attjoined$code)
+```
 
 
 ```{r, eval=FALSE, echo=TRUE}
