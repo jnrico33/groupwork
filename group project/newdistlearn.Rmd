@@ -34,23 +34,17 @@ options(scipen=999)
 ```
 
 
-##Loading and Manipulating Datasets
 
 
-#Attendance Rates Data
 
-
+#Attendance Rates by Month Data Loading and Manipulation
 ```{r}
-test<- readr::read_csv("1920 attendance rates.csv")
+test<- readr::read_csv("data/1920 attendance rates.csv")
 test
 ```
 
-
-
-
-
 ```{r}
-attrates<- readr::read_csv("att_rates.csv")
+attrates<- readr::read_csv("data/att_rates.csv")
 attrates
 
 #This dataset shows the percent of student attendance for attendance months 1-5 by year. This also shows the number of students that both enrolled and withdrew from the school site in each of these months along with the total number of enrollment at each of these months. 
@@ -63,68 +57,9 @@ attrates$year<- as.factor(attrates$year)
 attrates
 ```
 
-
-#GPA by academic year
-
+#Attendance Codes by Year Loading and Manipulation
 ```{r}
-gpa<- readr::read_csv("term_gpas.csv")
-gpa<- janitor::clean_names(gpa)
-gpa
-```
-
-
-```{r}
-gpa%>%
-  skimr::skim()
-```
-
-
-```{r}
-gpa %>%
-  group_by(year) %>% 
-  summarise_all(~(sum(is.na(.))))
-```
-
-
-
-```{r}
-gpa2<- gpa%>%
-  na.omit(gpa)
-```
-
-
-##Is this neccessary if the ggplot will already omit NA's? Keeping our code shorter but more concise seems preferable.
-```{r}
-gpa2 %>% 
-  group_by(year) %>% 
-  summarise_all(~(sum(is.na(.))))
-
-```
-
-
-
-```{r}
-gpa2$year<- as.factor(gpa2$year)
-gpa2
-
-#This dataset shows the term 1 and term 2 grades for students by year. Term 1 represents progress grades and term 2 is the final semester grade. I removed the NA's that were present in the form of no values. These values coincided with students either withdrawing prior to receiving their posted grades or enrolling with less than 20 days between their enrollment and the grading period. 
-```
-##This chunk manipulates the gpa2 dataframe into a form that we can use in our shiny app.
-```{r}
-gpa2_x <- gpa2 %>% rename('1'= term_1, '2' = term_2)
-gpa_2_long <- gpa2_x %>% 
-  pivot_longer(
-    3:4,
-    names_to="term",
-    values_to = "gpa")
-#write.csv(gpa_2_long, "gpa_2_long.csv")
-
-```
-
-#Attendance Codes by Year
-
-```{r}
-attreason <- readr::read_csv("att_reason_reports.csv")
+attreason <- readr::read_csv("data/att_reason_reports.csv")
 attreason
 ```
 
@@ -137,26 +72,75 @@ attcodes
 
 #This dataset shows the usage of attendance codes by year. These attendance codes are used when we enter the reason behind an absence. Some, such as DR, ILL, are excused while others like UNV, and VUN are not excused. These factor in when it comes to determining our attendance percentages. The codes ILL19, AVP, NWFA, DAC, and NCA are codes introduced due to the pandemic. 
 ```
-#Attempt to merge all attendance datasets (Do you plan to use 'virtualed' in the apps?)
-
+#Attendance Codes by Month Loading and Manipulation
 ```{r}
-virtualed <- merge(attrates, codesmonth,by="year")
-virtualed
+codesmonth<- readr::read_csv("data/ATTENDANCE CODES BY MONTH.csv")
+codesmonth<- janitor::clean_names(codesmonth)
+codesmonth$month <- as.factor(codesmonth$month)
+codesmonth$year <- as.factor(codesmonth$year)
+codesmonth
 ```
 
-
-
-
-#Data
-
-
-
 ```{r}
-attrates
+codesmonth_wide <- codesmonth %>% 
+  pivot_wider(
+    names_from = "code",
+    values_from = "used"
+  )
+codesmonth_wide
 ```
 
+```{r}
+attjoined <- inner_join(attrates, codesmonth_wide, by=c("year","month"))
+```
+##GPA Data Loading and Manipulation
+```{r}
+gpa<- readr::read_csv("data/term_gpas.csv")
+gpa<- janitor::clean_names(gpa)
+gpa
+```
 
+```{r}
+gpa%>%
+  skimr::skim()
+```
 
+```{r}
+gpa %>%
+  group_by(year) %>% 
+  summarise_all(~(sum(is.na(.))))
+```
+
+```{r}
+gpa2<- gpa%>%
+  na.omit(gpa)
+```
+
+```{r}
+gpa2 %>% 
+  group_by(year) %>% 
+  summarise_all(~(sum(is.na(.))))
+```
+
+```{r}
+gpa2$year<- as.factor(gpa2$year)
+gpa2
+
+#This dataset shows the term 1 and term 2 grades for students by year. Term 1 represents progress grades and term 2 is the final semester grade. I removed the NA's that were present in the form of no values. These values coincided with students either withdrawing prior to receiving their posted grades or enrolling with less than 20 days between their enrollment and the grading period. 
+```
+
+##This chunk manipulates the gpa2 dataframe into a form that we can use in our shiny app.
+```{r}
+gpa2_x <- gpa2 %>% rename('1'= term_1, '2' = term_2)
+gpa_2_long <- gpa2_x %>% 
+  pivot_longer(
+    3:4,
+    names_to="term",
+    values_to = "gpa")
+#write.csv(gpa_2_long, "gpa_2_long.csv")
+```
+
+#Shiny Rough Drafts
 ```{r, eval=FALSE, echo=TRUE}
 ui <- dashboardPage(
     dashboardHeader(title = "Attendance Rates, Enrollment and Withdrawal Data by Month"),
@@ -198,12 +182,6 @@ server <- function(input, output, session) {
 shinyApp(ui, server)
 ```
 
-
-
-
-
-
-
 ```{r}
 ui <- dashboardPage(
   dashboardHeader(title = "First Semester Attendance Rates 19/20 vs 20/21 "),
@@ -236,23 +214,9 @@ shinyApp(ui, server)
 
 
 ## These new data sets need to be higher up.
-```{r}
-codesmonth<- readr::read_csv("ATTENDANCE CODES BY MONTH.csv")
-codesmonth<- janitor::clean_names(codesmonth)
-codesmonth$month <- as.factor(codesmonth$month)
-codesmonth$year <- as.factor(codesmonth$year)
-```
-```{r}
-codesmonth_wide <- codesmonth %>% 
-  pivot_wider(
-    names_from = "code",
-    values_from = "used"
-  )
-codesmonth_wide
-```
-```{r}
-attjoined <- inner_join(attrates, codesmonth_wide, by=c("year","month"))
-```
+
+
+
 
 
 ```{r}
@@ -345,16 +309,7 @@ shinyApp(ui, server)
 
 
 
-```{r}
-attjoined
-```
-```{r}
-n_distinct(attjoined$code)
-attjoined$code <- as.factor(attjoined$code)
-```
-
-
-```{r, eval=FALSE, echo=TRUE}
+```{r,eval=FALSE, echo=TRUE}
 
 ui <- dashboardPage(
   dashboardHeader(title = "First Semester Attendance Rates 19/20 vs 20/21"),
