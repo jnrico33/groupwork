@@ -12,7 +12,7 @@ library(shinydashboard)
 library(ggthemes)
 gpa_2_long <- readr::read_csv("gpa_2_long.csv")
 
-ui <- dashboardPage(
+ui <- dashboardPage(skin ="black",
     dashboardHeader(title = "GPA Shiny App"),
     dashboardSidebar(disable = F),
     dashboardBody(

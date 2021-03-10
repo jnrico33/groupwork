@@ -38,24 +38,32 @@ options(scipen=999)
 
 
 #Attendance Rates by Month Data Loading and Manipulation
-```{r}
-test<- readr::read_csv("data/1920 attendance rates.csv")
-test
-```
 
 ```{r}
 attrates<- readr::read_csv("data/att_rates.csv")
 attrates
 
-#This dataset shows the percent of student attendance for attendance months 1-5 by year. This also shows the number of students that both enrolled and withdrew from the school site in each of these months along with the total number of enrollment at each of these months. 
+#This dataset shows the percent of student attendance for attendance months 1-5 by year. This also shows the number of students that both enrolled and withdrew from the school site in each of these months along with the total number of enrollment at each of these months. (Note: the months are academic months)
 ```
 
 
 ```{r}
 attrates<- janitor::clean_names(attrates)
 attrates$year<- as.factor(attrates$year)
+attrates$month<- as.factor(attrates$month)
 attrates
 ```
+```{r}
+attrates_long <- attrates %>% 
+  pivot_longer(
+    3:6,
+    names_to="attendance_statistic",
+    values_to="value"
+  )
+attrates_long
+#write.csv(attrates_long, "data/attrateslong.csv")
+```
+
 
 #Attendance Codes by Year Loading and Manipulation
 ```{r}
@@ -92,6 +100,7 @@ codesmonth_wide
 
 ```{r}
 attjoined <- inner_join(attrates, codesmonth_wide, by=c("year","month"))
+attjoined
 ```
 ##GPA Data Loading and Manipulation
 ```{r}
@@ -140,47 +149,27 @@ gpa_2_long <- gpa2_x %>%
 #write.csv(gpa_2_long, "gpa_2_long.csv")
 ```
 
+
 #Shiny Rough Drafts
-```{r, eval=FALSE, echo=TRUE}
-ui <- dashboardPage(
-    dashboardHeader(title = "Attendance Rates, Enrollment and Withdrawal Data by Month"),
-    dashboardSidebar(disable = F),
-    dashboardBody(
-        fluidRow(
-            box(title = "Plot Options", width = 3,
-                radioButtons("x", "Select Month", choices = c("1", "2", "3", "4", "5"), 
-                             selected = "1"),
-                selectInput("y", "Select Term", choices = c("attendance_rate_percent", "student_add", "student_drop"),
-                            selected = "attendance_rate_percent"),
-            ), # close the first box
-            box(title = "Attendance Rates", "Enrollment and Withdrawal Data by Month", width=7,
-                plotOutput("plot", width = "600px", height = "500px")
-            ) # close the second box
-        ) # close the row
-    ) # close the dashboard body
-) # close the ui
-
-server <- function(input, output, session) { 
-    
-    output$plot <- renderPlot({
-        virtualed %>% 
-            filter(month.x==input$x & attendance_rate_percent==input$y) %>% 
-            ggplot(aes(x=month.x, fill=year)) +
-            geom_histogram()+
-            #facet_wrap(~year)+
-            #geom_col(color="black", fill="slateblue2", alpha=1)+
-            theme_gdocs()+
-            theme(axis.text.x = element_text(angle = 60, hjust = 1))
-            #labs(x = "Month", y = "Number in Category")
-    
-})
-    
-    # stop the app when we close it
-    session$onSessionEnded(stopApp)
-}
-
-shinyApp(ui, server)
+```{r}
+attjoined
 ```
+```{r}
+attjoined %>% 
+  pivot_longer(
+    7:17,
+    names_to="attendance_code",
+    values_to="occurences"
+  )
+```
+```{r}
+attrates_long
+attrates_long %>%
+  filter(attendance_statistic=="student_drop") %>% 
+  ggplot(aes(x=month, y=value))
+```
+
+
 
 ```{r}
 ui <- dashboardPage(
@@ -210,58 +199,11 @@ shinyApp(ui, server)
 ```
 
 
-
-
-
-## These new data sets need to be higher up.
-
-
-
-
-
-```{r}
-
-attrates$month <- as.factor(attrates$month)
-attrates
-```
-
-
-
-
-
-
-
-```{r}
-glimpse(attjoined)
-```
-```{r}
-attjoined
-```
-```{r}
-attjoined %>% 
-  pivot_longer(
-    7:17,
-    names_to="attendance_code",
-    values_to="occurences"
-  ) %>% 
-  filter(year==2019) %>% 
-  select(attendance_code, occurences) %>% 
-  group_by(attendance_code) %>% 
-  summarise(n=sum(occurences))
-```
-
 ```{r}
 attjoined %>% 
   ggplot(aes(x=code, y=month, fill=year))+
   geom_col(position = "dodge")
 ```
-
-
-
-```{r}
-attjoined
-```
-
 ```{r, eval=FALSE, echo=TRUE}
 
 ui <- dashboardPage(
@@ -303,12 +245,6 @@ server <- function(input, output, session) {
 
 shinyApp(ui, server)
 ```
-
-
-
-
-
-
 ```{r,eval=FALSE, echo=TRUE}
 
 ui <- dashboardPage(
