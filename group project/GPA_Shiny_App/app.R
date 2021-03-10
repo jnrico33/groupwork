@@ -14,7 +14,7 @@ gpa_2_long <- readr::read_csv("gpa_2_long.csv")
 
 ui <- dashboardPage(skin ="black",
     dashboardHeader(title = "GPA Shiny App"),
-    dashboardSidebar(disable = F),
+    dashboardSidebar(disable = T),
     dashboardBody(
         fluidRow(
             box(title = "Plot Options", width = 2,

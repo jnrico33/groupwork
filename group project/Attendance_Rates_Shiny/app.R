@@ -20,7 +20,7 @@ attrates_long <- readr::read_csv("attrateslong.csv")
 
 ui <- dashboardPage(skin ="black",
     dashboardHeader(title = "Attendance Data"),
-    dashboardSidebar(disable = F),
+    dashboardSidebar(disable = T),
     dashboardBody(
         fluidRow(
             box(title = "Plot Options", width = 3,
