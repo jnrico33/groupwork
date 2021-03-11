@@ -1,0 +1,264 @@
+---
+title: "finalproject"
+author: "Jessica Rico"
+date: "`r Sys.Date()`"
+output: 
+  html_document: 
+    keep_md: yes
+    toc: yes
+runtime: shiny
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+if (!require("tidyverse")) install.packages('tidyverse')
+```
+
+
+```{r}
+library(tidyverse)
+library(rmarkdown)
+library(shiny)
+library(shinydashboard)
+library(skimr)
+library(janitor)
+library(here)
+library(RColorBrewer)
+library(paletteer)
+library(ggthemes)
+library(naniar)
+library(dplyr)
+library(ggpubr)
+library(ggplot2)
+library(here)
+options(scipen=999)
+```
+
+
+##Data Sets
+
+#Attendance Rates by Month Data Loading and Manipulation
+
+
+```{r}
+attrates<- readr::read_csv("data/att_rates.csv")
+attrates<- janitor::clean_names(attrates)
+attrates$year<- as.factor(attrates$year)
+attrates$month<- as.factor(attrates$month)
+attrates
+
+#This data set shows the percent of student attendance for attendance months 1-5 by year. This also shows the number of students that both enrolled and withdrew from the school site in each of these months along with the total number of enrollment at each of these months. (Note: the months are attendance months rather than calendar months)
+```
+
+
+```{r}
+attrates_long <- attrates %>% 
+  pivot_longer(
+    3:6,
+    names_to="attendance_statistic",
+    values_to="value"
+  )
+attrates_long
+#write.csv(attrates_long, "data/attrateslong.csv")
+```
+
+#Attendance Codes by Year Loading and Manipulation
+
+```{r}
+attreason <- readr::read_csv("data/att_reason_reports.csv")
+attreason
+```
+
+
+```{r}
+attcodes<- attreason%>%
+  pivot_longer(-year, names_to = "att_code", values_to = "occurence")
+attcodes$year<- as.factor(attcodes$year)
+attcodes
+
+#This dataset shows the usage of attendance codes by year. These attendance codes are used when we enter the reason behind an absence. Some, such as DR, ILL, are excused while others like UNV, and VUN are not excused. These factor in when it comes to determining our attendance percentages. The codes ILL19, AVP, NWFA, DAC, and NCA were introduced for virtual/distance learning due to the pandemic. 
+```
+
+
+
+#Attendance Codes by Month & Year Loading and Manipulation
+
+```{r}
+codesmonth<- readr::read_csv("data/attendance codes by month.csv")
+codesmonth<- janitor::clean_names(codesmonth)
+codesmonth$month <- as.factor(codesmonth$month)
+codesmonth$year <- as.factor(codesmonth$year)
+codesmonth
+
+#This dataset shows the usage of attendance codes by month and year rather than showing the total counts for each code by year (as seen above in "attcodes"). 
+```
+
+
+```{r}
+codesmonth_wide <- codesmonth %>% 
+  pivot_wider(
+    names_from = "code",
+    values_from = "used"
+  )
+codesmonth_wide
+```
+
+
+```{r}
+codes_summary <- codesmonth%>%
+  group_by(code, year)%>%
+  summarise(total=sum(used))
+```
+
+
+##Data Analysis
+
+
+#Attendance Rates, Enrollments and Withdrawals by Year 
+
+
+
+```{r}
+attrates_long <- readr::read_csv("attrateslong.csv")
+
+ui <- dashboardPage(skin ="black",
+    dashboardHeader(title = "Attendance Data"),
+    dashboardSidebar(disable = T),
+    dashboardBody(
+        fluidRow(
+            box(title = "Plot Options", width = 3,
+                selectInput("x", "Select Term", choices = c("attendance_rate_percent", "student_add", "student_drop"),
+                            selected = "attendance_rate_percent"),
+            ), # close the first box
+            box(title = "Attendance Rates, Enrollment and Withdrawal Data by Month", width=8,
+                plotOutput("plot", width = "700px", height = "500px")
+            ) # close the second box
+        ) # close the row
+    ) # close the dashboard body
+) # close the ui
+server <- function(input, output, session) { 
+    output$plot <- renderPlot({
+        attrates_long %>% 
+            filter(attendance_statistic==input$x) %>% 
+            ggplot(aes(x=month, y=value)) +
+            geom_col(color="black", fill="darkcyan", alpha=.5)+
+            facet_wrap(~year)+
+            #geom_col(color="black", fill="slateblue2", alpha=1)+
+            theme_gdocs()+
+            labs(x="Month",y="Count")
+        
+    })
+    
+    # stop the app when we close it
+    session$onSessionEnded(stopApp)
+}
+shinyApp(ui, server)
+
+
+#This shinyApp shows the attendance rates, enrollment and withdrawals by month and year. At first sight, there does not appear to be many differences between the two years. We decided to do a deeper analysis into the attendance rates that are used to determine the actual attendance rates. 
+```
+
+
+
+#Attendance Code Usage by Month and Year
+
+```{r}
+p<- codesmonth%>%
+  ggplot(aes(x=code, y=used, fill=code))+
+  geom_col()+
+  facet_grid(year~month)
+
+```
+
+
+```{r}
+p+theme_light()+
+  theme(axis.text.x = element_text(angle = 90, hjust=1, size = 8))+
+  labs(title = "Number of Times Attendance Codes Used by Month and Year",
+       x = "Attendance Code",
+       y= "Number of Times Used")
+
+
+#Here we can see a comparison of the number of times that each attendance code was used by month and year. The high number of AVP's immediately stands out. These are the main type of unexcused absence for the year 2020. 
+```
+
+
+```{r}
+codessubset<- subset(codesmonth, code==c("AVP","UNV"))
+```
+
+```{r}
+p2<- codessubset%>%
+  ggplot(aes(x=code, y=used, fill=year))+
+  geom_col(position="dodge")
+
+```
+
+
+```{r}
+p2+theme_pander()+
+  theme(axis.text.x = element_text(angle = 0, hjust=1))+
+  labs(title = "Attendance Codes Used in First Semester by Year",
+       x = "Attendance Code",
+       y= "Number of Times Used",
+       fill= "Year")
+
+#AVP stands for "absent virtual participation"; this essentially means that the student was absent from their class period for an unknown reason (no parent contact, Dr note, etc). This code was introduced in 2020 due to the shift to distance learning. In regular year, an unknown reason for an absence is documented using the code UNV which stands for unverified. This plot is showing the dramatic increase in total number of unknown absences for the first semester of 2020 vs the total number for the first semester of 2019. With all of these absences, we were curious to see what the impact was on academic performance. 
+```
+
+##First Semester GPA by Grade Level and Year
+
+```{r}
+gpa_2_long <- readr::read_csv("gpa_2_long.csv")
+
+ui <- dashboardPage(skin ="black",
+    dashboardHeader(title = "GPA Shiny App"),
+    dashboardSidebar(disable = T),
+    dashboardBody(
+        fluidRow(
+            box(title = "Plot Options", width = 2,
+                radioButtons("x", "Select Grade", choices = c("6", "7", "8"), 
+                             selected = "6"),
+                radioButtons("y", "Select Term", choices = c("1", "2"),
+                             selected = "1"),
+                radioButtons("z", "Select Year", choices = c("2019", "2020"),
+                             selected = "2019"),
+            ), # close the first box
+            box(title = "GPA Data From Years 19-20 and 20-21", width=8,
+                plotOutput("plot", width = "700px", height = "500px")
+            ) # close the second box
+        ) # close the row
+    ) # close the dashboard body
+) # close the ui
+
+server <- function(input, output, session) { 
+    
+    output$plot <- renderPlot({
+        gpa_2_long %>% 
+            filter(grade==input$x & term==input$y & year==input$z) %>% 
+            ggplot(aes(x=gpa, fill=year)) +
+            geom_density(color="black", fill="darkcyan", alpha=.5)+
+            theme_gdocs()+
+            labs(x="GPA", y="Student Count")
+        
+    })
+    
+    # stop the app when we close it
+    session$onSessionEnded(stopApp)
+}
+
+shinyApp(ui, server)
+
+
+#Term 1 represents progress report grades and Term 2 is the final semester grade received. This shinyApp shows the trends for each grade level by term and year. 
+```
+
+
+
+
+
