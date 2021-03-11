@@ -160,7 +160,7 @@ shinyApp(ui, server)
 
 # Attendance Code Usage by Month and Year Plots
 
-```{r}
+```{r, message=FALSE, echo=FALSE, cache = TRUE}
 codesmonth%>%
   ggplot(aes(x=code, y=used, fill=code))+
   geom_col()+
