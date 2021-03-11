@@ -10,7 +10,7 @@ output:
     toc: yes
 runtime: shiny
 ---
-Our group project subject was on sociocultural issues, and we chose to analyze the effects of the switch to distance learning due to the pandemic on middle school students. Due to the pandemic, schools had to abruptly shut down and switch to remote learning, leaving a lot of students behind due to inaccessibility to internet or computer access and the lack of in class engagement with teachers and other students . We decided to study the impact of school closures on student academic achievement. We were lucky that one of our group members works for a middle school and she was able to provide us with data for the statistics for attendance and GPA before and after the pandemic.
+Our group project subject was on sociocultural issues, and we chose to analyze the effects of the switch to distance learning due to the pandemic on middle school students. Schools had to abruptly shut down and switch to remote learning, leaving a lot of students behind due to inaccessibility to internet or computer access and the lack of in class engagement with teachers and other students . We decided to study the impact of school closures on student academic achievement. We were lucky that one of our group members works for a middle school and she was able to provide us with data for the statistics for attendance and GPA before and after the pandemic.
 
 # Our Questions about Palmdale School District
 
@@ -19,6 +19,10 @@ How did the switch to distance learning due to the pandemic affect attendance?
 How did the switch to distance learning affect grade distributions?
 
 What conclusions can we draw from data? What kind of future policy changes, ramifications with returning to in person classes, and issues with inequity can be drawn from our analysis?
+
+# Our Data
+
+We used publicly available datasets published by the Palmdale School District. All data was obtained with permission of school administrators and all Personally Identifiable Information was already omitted from our datasets.  
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -151,11 +155,8 @@ server <- function(input, output, session) {
     session$onSessionEnded(stopApp)
 }
 shinyApp(ui, server)
-
-
-#This shinyApp shows the attendance rates, enrollment and withdrawals by month and year. At first sight, there does not appear to be many differences between the two years. We decided to do a deeper analysis into the attendance rates that are used to determine the actual attendance rates. 
 ```
-
+This shinyApp shows the attendance rates, enrollment and withdrawals by month and year. At first sight, there does not appear to be many differences between the two years. We decided to do a deeper analysis into the attendance rates that are used to determine the actual attendance rates. 
 
 
 # Attendance Code Usage by Month and Year Plots
@@ -239,6 +240,7 @@ shinyApp(ui, server)
 ```
 All the grades listed are from the first semester of both years. Term 1 represents progress report grades and Term 2 is the final semester grade received. This shinyApp shows the trends for each grade level by term and year. 
 
+# In Conclusion
 
 
 
