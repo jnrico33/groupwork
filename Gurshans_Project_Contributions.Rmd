@@ -1,0 +1,562 @@
+---
+title: "Gurshans_Project_Contributions"
+author: "Gurshan Rai"
+date: "3/20/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Code From nachomacho321/BIS15Group5/GPA_App_Semi_Final_Draft.Rmd
+##Edited By Gurshan
+```{r}
+att_reasontidy <- att_reason%>%
+  pivot_longer(DR:NCA,  # does not pivot
+               names_to = "attendance_code", 
+               values_to = "occurence"
+               )%>%
+  filter(count_type=="periods")%>%
+  #select(attendance_code, occurence)%>%
+  arrange(desc(occurence))
+att_reasontidy
+```
+```{r}
+term_gpa
+term_gpa <- term_gpa %>% 
+  rename('1'= term_1, '2' = term_2)
+```
+```{r}
+term_gpa_even_longer <- term_gpa %>%
+  pivot_longer(
+    3:4,
+    names_to="term",
+    values_to="gpa"
+  )
+term_gpa_even_longer$gpa <- as.numeric(term_gpa_even_longer$gpa)
+term_gpa_even_longer$term <- as.factor(term_gpa_even_longer$term)
+term_gpa_even_longer$grade <- as.factor(term_gpa_even_longer$grade)
+term_gpa_even_longer
+```
+
+##Edited by Gurshan
+##GPAs Shiny app
+
+```{r, eval=FALSE, echo=TRUE}
+ui <- dashboardPage(
+    dashboardHeader(title = "GPA Shiny App"),
+    dashboardSidebar(disable = T),
+    dashboardBody(
+        fluidRow(
+            box(title = "Plot Options", width = 2,
+                radioButtons("x", "Select Grade", choices = c("6", "7", "8"), 
+                             selected = "6"),
+                radioButtons("y", "Select Term", choices = c("1", "2"),
+                            selected = "2"),
+                radioButtons("z", "Select Year", choices = c("2019", "2020"),
+                            selected = "2020"),
+            ), # close the first box
+            box(title = "GPA Data From Years 19-20 and 20-21", width=8,
+                plotOutput("plot", width = "700px", height = "500px")
+            ) # close the second box
+        ) # close the row
+    ) # close the dashboard body
+) # close the ui
+server <- function(input, output, session) { 
+    
+    output$plot <- renderPlot({
+        term_gpa_even_longer %>% 
+            filter(grade==input$x & term==input$y & year==input$z) %>% 
+            ggplot(aes(x=gpa, fill=year)) +
+            geom_histogram(color="black", fill="darkcyan", alpha=.5)+
+            theme_gdocs()+
+            labs(x="GPA", y="Student Count")
+    
+})
+    
+    # stop the app when we close it
+    session$onSessionEnded(stopApp)
+}
+shinyApp(ui, server)
+```
+
+```{r}
+att_ratestidy_wide <- att_ratestidy %>% 
+   separate(academic_year, into= c("year", "month"), sep = "_")
+att_ratestidy_wide$year <- as.numeric(att_ratestidy_wide$year)
+att_ratestidy_wide$month <- as.numeric(att_ratestidy_wide$month)
+att_ratestidy_wide
+```
+
+
+```{r}
+?inner_join
+att_info_join <- inner_join(att_ratestidy_wide, att_reasontidy, by="year")
+```
+
+# Code sourced from nachomacho321/BIS15Group5/Group Project/GPA_cleaner.Rmd
+##Calling 2021 GPA
+```{r}
+GPAs_2021 <- readr::read_csv("data/2021TermGPA.csv") %>% 
+  janitor::clean_names()
+```
+##Visualizing 2021 Data
+```{r}
+summary(GPAs_2021)
+```
+##What exactly is rolling cumulative GPA and why are so many values missing? Are the NA's in general reflective of truant students, students who switched schools, etc...?
+```{r}
+naniar::miss_var_summary(GPAs_2021)
+```
+##Calling 1920 GPA
+```{r}
+GPAs_1920 <- readr::read_csv("data/1920TermGPA.csv") %>% 
+  janitor::clean_names()
+```
+##Visualizing 1920 Data
+```{r}
+summary(GPAs_1920)
+```
+```{r}
+miss_var_summary(GPAs_1920)
+```
+
+# Code From nachomacho321/BIS15Group5/GPA_Shiny_App/app.R
+ui <- dashboardPage(
+    dashboardHeader(title = "GPA Shiny App"),
+    dashboardSidebar(disable = F),
+    dashboardBody(
+        fluidRow(
+            box(title = "Plot Options", width = 2,
+                radioButtons("x", "Select Grade", choices = c("6", "7", "8"), 
+                             selected = "6"),
+                radioButtons("y", "Select Term", choices = c("1", "2"),
+                             selected = "1"),
+                radioButtons("z", "Select Year", choices = c("2019", "2020"),
+                             selected = "2019"),
+            ), # close the first box
+            box(title = "GPA Data From Years 19-20 and 20-21", width=8,
+                plotOutput("plot", width = "700px", height = "500px")
+            ) # close the second box
+        ) # close the row
+    ) # close the dashboard body
+) # close the ui
+
+server <- function(input, output, session) { 
+    
+    output$plot <- renderPlot({
+        gpa_2_long %>% 
+            filter(grade==input$x & term==input$y & year==input$z) %>% 
+            ggplot(aes(x=gpa, fill=year)) +
+            geom_density(color="black", fill="darkcyan", alpha=.5)+
+            theme_gdocs()+
+            labs(x="GPA", y="Student Count")
+        
+    })
+    
+    # stop the app when we close it
+    session$onSessionEnded(stopApp)
+}
+
+shinyApp(ui, server)
+
+# Contributions from nachomacho321/BIS15Group5/group_project.rmd
+
+gpa_2_long <- readr::read_csv("GPA_Shiny_App/gpa_2_long.csv")
+ui <- dashboardPage(
+    dashboardHeader(title = "GPA Shiny App"),
+    dashboardSidebar(disable = F),
+    dashboardBody(
+        fluidRow(
+            box(title = "Plot Options", width = 2,
+                radioButtons("x", "Select Grade", choices = c("6", "7", "8"), 
+                             selected = "6"),
+                radioButtons("y", "Select Term", choices = c("1", "2"),
+                             selected = "1"),
+                radioButtons("z", "Select Year", choices = c("2019", "2020"),
+                             selected = "2019"),
+            ), # close the first box
+            box(title = "GPA Data From Years 19-20 and 20-21", width=8,
+                plotOutput("plot", width = "700px", height = "500px")
+            ) # close the second box
+        ) # close the row
+    ) # close the dashboard body
+) # close the ui
+server <- function(input, output, session) { 
+    
+    output$plot <- renderPlot({
+        gpa_2_long %>% 
+            filter(grade==input$x & term==input$y & year==input$z) %>% 
+            ggplot(aes(x=gpa, fill=year)) +
+            geom_density(color="black", fill="darkcyan", alpha=.5)+
+            theme_gdocs()+
+            labs(x="GPA", y="Student Count")
+        
+    })
+    
+    # stop the app when we close it
+    session$onSessionEnded(stopApp)
+}
+shinyApp(ui, server)
+
+
+#Shiny Rough Drafts
+```{r, eval=FALSE, echo=TRUE}
+ui <- dashboardPage(
+    dashboardHeader(title = "Attendance Rates, Enrollment and Withdrawal Data by Month"),
+    dashboardSidebar(disable = F),
+    dashboardBody(
+        fluidRow(
+            box(title = "Plot Options", width = 3,
+                radioButtons("x", "Select Month", choices = c("1", "2", "3", "4", "5"), 
+                             selected = "1"),
+                selectInput("y", "Select Term", choices = c("attendance_rate_percent", "student_add", "student_drop"),
+                            selected = "attendance_rate_percent"),
+            ), # close the first box
+            box(title = "Attendance Rates", "Enrollment and Withdrawal Data by Month", width=7,
+                plotOutput("plot", width = "600px", height = "500px")
+            ) # close the second box
+        ) # close the row
+    ) # close the dashboard body
+) # close the ui
+server <- function(input, output, session) { 
+    
+    output$plot <- renderPlot({
+        virtualed %>% 
+            filter(month.x==input$x & attendance_rate_percent==input$y) %>% 
+            ggplot(aes(x=month.x, fill=year)) +
+            geom_histogram()+
+            #facet_wrap(~year)+
+            #geom_col(color="black", fill="slateblue2", alpha=1)+
+            theme_gdocs()+
+            theme(axis.text.x = element_text(angle = 60, hjust = 1))
+            #labs(x = "Month", y = "Number in Category")
+    
+})
+    
+    # stop the app when we close it
+    session$onSessionEnded(stopApp)
+}
+shinyApp(ui, server)
+```
+
+```{r}
+ui <- dashboardPage(
+  dashboardHeader(title = "First Semester Attendance Rates 19/20 vs 20/21 "),
+  dashboardSidebar(),
+  dashboardBody(
+  selectInput("y", "Select Filter", choices = c("attendance_rate_percent", "student_add", "student_drop"), selected = "attendance_rate_percent"),
+  plotOutput("plot", width = "500px", height = "400px")))
+dashboardBody(
+  selectInput("x", "Select Filter", choices=c("month", "year"), selected="year"), 
+  plotOutput("plot", width = "500px", height = "400px"))
+server <- function(input, output, session) { 
+ output$plot <- renderPlot({
+  attrates %>% 
+  ggplot(aes_string(x = "month", y = "attendance_rate_percent", fill=input$y)) +
+  geom_col(position="dodge", alpha = 0.8, size=4)+
+  theme_light(base_size = 18) + 
+     labs(title= "Attendance and Enrollment by month", x="Attendance Month", y="Number of Students", fill = "Legend")+
+     theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  })
+  session$onSessionEnded(stopApp)
+  }
+shinyApp(ui, server)
+```
+
+
+
+
+
+## These new data sets need to be higher up.
+
+
+
+
+
+```{r}
+attrates$month <- as.factor(attrates$month)
+attrates
+```
+
+
+
+
+
+
+
+```{r}
+glimpse(attjoined)
+```
+```{r}
+attjoined
+```
+```{r}
+attjoined %>% 
+  pivot_longer(
+    7:17,
+    names_to="attendance_code",
+    values_to="occurences"
+  ) %>% 
+  filter(year==2019) %>% 
+  select(attendance_code, occurences, month) %>% 
+  group_by(attendance_code) %>% 
+  summarise(n=sum(occurences))
+```
+
+```{r}
+attjoined %>% 
+  ggplot(aes(x=attendance_code, y=month, fill=year))+
+  geom_col(position = "dodge")
+```
+
+
+
+```{r}
+attjoined
+```
+
+```{r, eval=FALSE, echo=TRUE}
+ui <- dashboardPage(
+    dashboardHeader(title = "GPA Stuff"),
+    dashboardSidebar(disable = F),
+    dashboardBody(
+        fluidRow(
+            box(title = "Plot Options", width = 3,
+                radioButtons("x", "Select Month", choices = c("1", "2", "3", "4", "5"), 
+                             selected = "1"),
+                selectInput("y", "Select Factor", choices = c("student_attendance_percent", "student_add","student_drop", "used"),
+                            selected = "student_attendance_percent"),
+            ), # close the first box
+            box(title = "GPA Stuff", width=7,
+                plotOutput("plot", width = "600px", height = "500px")
+            ) # close the second box
+        ) # close the row
+    ) # close the dashboard body
+) # close the ui
+server <- function(input, output, session) { 
+    
+    attjoined <- renderPlot({
+        term_gpa_even_longer %>% 
+            filter(month==input$x & number_of_students==input$y) %>% 
+            ggplot(aes(x=month, fill=code)) +
+            geom_histogram()+
+            facet_wrap(~year)+
+            #geom_col(color="black", fill="slateblue2", alpha=1)+
+            theme_gdocs()+
+            theme(axis.text.x = element_text(angle = 60, hjust = 1))
+            #labs(x = "Data for Choice", y = "Number in Category")
+    
+})
+    
+    # stop the app when we close it
+    session$onSessionEnded(stopApp)
+}
+shinyApp(ui, server)
+```
+
+# Contributions to jnrico33/groupwork/group project/Attendance_Rates_Shiny/app.R
+
+ui <- dashboardPage(skin ="black",
+    dashboardHeader(title = "Attendance Data"),
+    dashboardSidebar(disable = T),
+    dashboardBody(
+        fluidRow(
+            box(title = "Plot Options", width = 3,
+                selectInput("x", "Select Term", choices = c("attendance_rate_percent", "student_add", "student_drop"),
+                            selected = "attendance_rate_percent"),
+            ), # close the first box
+            box(title = "Attendance Rates, Enrollment and Withdrawal Data by Month", width=8,
+                plotOutput("plot", width = "700px", height = "500px")
+            ) # close the second box
+        ) # close the row
+    ) # close the dashboard body
+) # close the ui
+server <- function(input, output, session) { 
+    output$plot <- renderPlot({
+        attrates_long %>% 
+            filter(attendance_statistic==input$x) %>% 
+            ggplot(aes(x=month, y=value)) +
+            geom_col(color="black", fill="darkcyan", alpha=.5)+
+            facet_wrap(~year)+
+            #geom_col(color="black", fill="slateblue2", alpha=1)+
+            theme_gdocs()+
+            labs(x="Month",y="Count")
+        
+    })
+    
+    # stop the app when we close it
+    session$onSessionEnded(stopApp)
+}
+shinyApp(ui, server)
+
+# Contributions to jnrico33/groupwork/group project/Combo App/Untitled (1).R
+
+sidebar <- dashboardSidebar(
+  sidebarMenu(
+    menuItem("Victim", tabName = "victim"),
+    menuItem("Trafficker", tabName = "trafficker")
+  )
+)
+
+body <- dashboardBody(
+  tabItems(
+    tabItem(tabName = "victim",
+            h2("Victim tab")
+    ),
+    
+    tabItem(tabName = "trafficker",
+            h2("Trafficker tab")
+    )
+  )
+)
+
+shinyApp(
+  ui = dashboardPage(
+    dashboardHeader(title = "Human Trafficking"),
+    sidebar,
+    body
+  ),
+  server = function(input, output) { }
+)
+
+# Contributions to jnrico33/groupwork/group project/GPA_Shiny_App/ui.R
+
+shinyUI(
+    dashboardPage(
+        title = 'HRRC',
+        header = dashboardHeader(
+            titleWidth='100%',
+            title = span(
+                tags$img(src="www/palmdale_school_logo.png", width = '100%')
+                )
+            ),
+            dropdownMenuOutput("helpMenu")       
+        ),
+        body = dashboardBody(
+            # see next chunk for the CSS
+        )
+    )
+    
+# Contributions to jnrico33/groupwork/group project/GPA_Shiny_App/app.R
+
+gpa_2_long <- readr::read_csv("gpa_2_long.csv")
+
+ui <- dashboardPage(skin ="black",
+    dashboardHeader(title = "GPA Shiny App"),
+    dashboardSidebar(disable = T),
+    dashboardBody(
+        fluidRow(
+            box(title = "Plot Options", width = 2,
+                radioButtons("x", "Select Grade", choices = c("6", "7", "8"), 
+                             selected = "6"),
+                radioButtons("y", "Select Term", choices = c("1", "2"),
+                             selected = "1"),
+                radioButtons("z", "Select Year", choices = c("2019", "2020"),
+                             selected = "2019"),
+            ), # close the first box
+            box(title = "GPA Data From Years 19-20 and 20-21", width=8,
+                plotOutput("plot", width = "700px", height = "500px")
+            ) # close the second box
+        ) # close the row
+    ) # close the dashboard body
+) # close the ui
+
+server <- function(input, output, session) { 
+    
+    output$plot <- renderPlot({
+        gpa_2_long %>% 
+            filter(grade==input$x & term==input$y & year==input$z) %>% 
+            ggplot(aes(x=gpa, fill=year)) +
+            geom_density(color="black", fill="darkcyan", alpha=.5)+
+            theme_gdocs()+
+            labs(x="GPA", y="Student Count")
+        
+    })
+    
+    # stop the app when we close it
+    session$onSessionEnded(stopApp)
+}
+
+shinyApp(ui, server)
+
+# Contributions to jnrico33/groupwork/group project/finalproject.Rmd
+#Attendance Numbers Shiny App 
+
+```{r}
+attrates_long <- readr::read_csv("attrateslong.csv")
+ui <- dashboardPage(skin ="black",
+    dashboardHeader(title = "Attendance Data"),
+    dashboardSidebar(disable = T),
+    dashboardBody(
+        fluidRow(
+            box(title = "Plot Options", width = 3,
+                selectInput("x", "Select Term", choices = c("attendance_rate_percent", "student_add", "student_drop"),
+                            selected = "attendance_rate_percent"),
+            ), # close the first box
+            box(title = "Attendance Rates, Enrollment and Withdrawal Data by Month", width=6,
+                plotOutput("plot", width = "500px", height = "300px")
+            ) # close the second box
+        ) # close the row
+    ) # close the dashboard body
+) # close the ui
+server <- function(input, output, session) { 
+    output$plot <- renderPlot({
+        attrates_long %>% 
+            filter(attendance_statistic==input$x) %>% 
+            ggplot(aes(x=month, y=value)) +
+            geom_col(color="black", fill="darkcyan", alpha=.5)+
+            facet_wrap(~year)+
+            #geom_col(color="black", fill="slateblue2", alpha=1)+
+            theme_gdocs()+
+            labs(x="Month",y="Count")
+        
+    })
+    
+    # stop the app when we close it
+    session$onSessionEnded(stopApp)
+}
+shinyApp(ui, server)
+```
+
+# First Semester GPA by Grade Level and Year App
+
+```{r}
+gpa_2_long <- readr::read_csv("gpa_2_long.csv")
+ui <- dashboardPage(skin ="black",
+    dashboardHeader(title = "GPA Shiny App"),
+    dashboardSidebar(disable = T),
+    dashboardBody(
+        fluidRow(
+            box(title = "Plot Options", width = 2,
+                radioButtons("x", "Select Grade", choices = c("6", "7", "8"), 
+                             selected = "6"),
+                radioButtons("y", "Select Term", choices = c("1", "2"),
+                             selected = "1"),
+                radioButtons("z", "Select Year", choices = c("2019", "2020"),
+                             selected = "2019"),
+            ), # close the first box
+            box(title = "GPA Data From Years 19-20 and 20-21", width=6,
+                plotOutput("plot", width = "500px", height = "300px")
+            ) # close the second box
+        ) # close the row
+    ) # close the dashboard body
+) # close the ui
+server <- function(input, output, session) { 
+    
+    output$plot <- renderPlot({
+        gpa_2_long %>% 
+            filter(grade==input$x & term==input$y & year==input$z) %>% 
+            ggplot(aes(x=gpa, fill=year)) +
+            geom_density(color="black", fill="darkcyan", alpha=.5)+
+            theme_gdocs()+
+            labs(x="GPA", y="Student Count")
+        
+    })
+    
+    # stop the app when we close it
+    session$onSessionEnded(stopApp)
+}
+shinyApp(ui, server)
+```
